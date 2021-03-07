@@ -12,51 +12,91 @@ import operator
 import base64 
 import requests
 import twitter
-import re
- 
-#Carrega as Credenciais
+import re 
+import urllib.parse
 
-with open("twitter_credentials.json", "r") as file:
-    creds = json.load(file)
+
+def get_bearer_token(consumer_key, consumer_secret):
     
     
-#Autorização oAuth1.0
+    OAUTH2_TOKEN = 'https://api.twitter.com/oauth2/token'
 
-twitter = twitter.Twitter(auth = twitter.OAuth(
-                  creds['ACCESS_TOKEN'],
-                  creds['ACCESS_SECRET'],
-                  creds['CONSUMER_KEY'],
-                  creds['CONSUMER_SECRET'])
-                  )
+    # encode  
+    consumer_key = urllib.parse.quote(consumer_key) 
+    consumer_secret = urllib.parse.quote(consumer_secret)
+    
+    # cria bearer token
+    bearer_token = consumer_key + ':' + consumer_secret
+    
+    # encode  
+    base64_encoded_bearer_token = base64.b64encode(bearer_token.encode('utf-8'))
+    
+    # requisição
+    headers = {
+        "Authorization": "Basic " + base64_encoded_bearer_token.decode('utf-8') + "",
+        "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8",
+        "Content-Length": "29"}
 
-#Autorização oAuth2.0
-
-
-key_secret = '{}:{}'.format( creds['CONSUMER_KEY'], creds['CONSUMER_SECRET']).encode('ascii')
-b64_encoded_key = base64.b64encode(key_secret)
-b64_encoded_key = b64_encoded_key.decode('ascii')
+    response = requests.post(OAUTH2_TOKEN, headers=headers, data={'grant_type': 'client_credentials'})
+    response_json = response.json()
+    return response_json['access_token']
  
 
-base_url = 'https://api.twitter.com/'
- 
-auth_headers = {
-    'Authorization': 'Basic {}'.format(b64_encoded_key),
-    'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8'
-}
-  
-search_headers = {
-    'Authorization': 'Bearer {}'.format(creds['BEARER_TOKEN'])    
-}
 
 
-#Captura das Citações pela API do Twitter
-
-def get_citations(all_track_names):
+def get_citations(all_track_names): 
+    #Carrega as Credenciais
+    
+    credentials_filename = "twitter_credentials"
+    
+    #checa se em ambiente de desenvolvimento para carregar as credenciais de teste
+    try:
+        open(".env", "r")
+        credentials_filename+="_env"
+    except:
+        pass
+        
+    
+    with open(credentials_filename+".json", "r") as file:
+        creds = json.load(file)
+        
+        
+    #Autorização oAuth1.0
+    
+    twitter_ = twitter.Twitter(auth = twitter.OAuth(
+                      creds['ACCESS_TOKEN'],
+                      creds['ACCESS_SECRET'],
+                      creds['CONSUMER_KEY'],
+                      creds['CONSUMER_SECRET'])
+                      )
+    
+    #Autorização oAuth2.0
+    
+    
+    key_secret = '{}:{}'.format( creds['CONSUMER_KEY'], creds['CONSUMER_SECRET']).encode('ascii')
+    b64_encoded_key = base64.b64encode(key_secret)
+    b64_encoded_key = b64_encoded_key.decode('ascii')
      
+    
+    base_url = 'https://api.twitter.com/'
+     
+    auth_headers = {
+        'Authorization': 'Basic {}'.format(b64_encoded_key),
+        'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8'
+    }
+      
+    search_headers = {
+        'Authorization': 'Bearer {}'.format(
+            get_bearer_token(creds['CONSUMER_KEY'], creds['CONSUMER_SECRET'])
+            )    
+    }
+    
+    
+    #Captura das Citações pela API do Twitter   
     track_usernames = {}
     for track_name in all_track_names: 
         
-        results = twitter.users.search(q = re.split('-|–',
+        results = twitter_.users.search(q = re.split('-|–',
                                        track_name)[0]. #excluí informações desnecessárias                                        
                                        replace('Music','') #caso específico do Spotify 
                                        )

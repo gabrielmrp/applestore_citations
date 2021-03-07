@@ -12,8 +12,7 @@ from sqlalchemy import create_engine
 import sqlite3
 import twitter_api
 from prettytable import PrettyTable
-import generate_credentials
-
+ 
 
 """ Leitura dos dados e identificação das colunas """ 
 df = pd.read_csv('AppleStore.csv')
@@ -64,11 +63,9 @@ df_top_10_music_or_book = df.loc[rating_music_or_book_top_index,:]
 
 """
 Chama a API do Twitter para capturar o número de citações (menções à pagina) das aplicações
-Para gerar novas credenciais altere o arquivo generate_credentials.py e descomente o trecho abaixo
 """
 
-#generate_credentials.generate()
-
+ 
 citations = twitter_api.get_citations(df_top_10_music_or_book.track_name.tolist())
 
 df_top_10_music_or_book['n_citacoes'] = df_top_10_music_or_book.track_name.map(citations)
@@ -91,7 +88,7 @@ output.to_csv(r'output.csv')
 
 
 """ Criação do arquivo JSON """
-output.to_json(r'output.json')
+output.to_json(r'output.json',orient='records')
 
 
 """ Criação da base de dados local sqlite """

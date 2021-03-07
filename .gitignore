@@ -1,3 +1,4 @@
 .env
 twitter_credentials2.json
+twitter_credentials_env.json
 get_bearer_token.py
